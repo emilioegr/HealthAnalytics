@@ -426,35 +426,38 @@ async function main() {
   const downloader = new GarminDataDownloader();
   
   try {
-    // Load credentials from environment variables (recommended) or hardcode
-    const username = process.env.GARMIN_USERNAME || 'your_garmin_email@example.com';
-    const password = process.env.GARMIN_PASSWORD || 'your_garmin_password';
+    // ============================================================
+    // AUTHENTICATION - Choose ONE option below
+    // ============================================================
     
-    if (username === 'emilio.guadarrama82@gmail.com') {
-      console.error('\n⚠ ERROR: Please set your Garmin credentials!');
-      console.log('\nOption 1 - Use environment variables (recommended):');
-      const username = 'emilio.guadarrama82@gmail.com';
-      const password = 'M@cbook0';
-      console.log('\nOption 2 - Edit the code and replace the placeholder credentials\n');
-      process.exit(1);
-    }
+    // OPTION A: Token-based authentication (RECOMMENDED for 2FA accounts)
+    // First run: python3 generate_tokens.py
+    console.log('Attempting to authenticate with OAuth tokens...');
+    await downloader.loginWithTokens('garmin_tokens.json');
     
-    // Login
-    await downloader.login(username, password);
+    // OPTION B: Username/Password authentication (Only for non-2FA accounts)
+    // Uncomment these lines and comment out Option A if you don't have 2FA
+    // const username = process.env.GARMIN_USERNAME || 'your_email@example.com';
+    // const password = process.env.GARMIN_PASSWORD || 'your_password';
+    // await downloader.login(username, password);
     
-    // Choose one of the following options:
+    // ============================================================
+    // DATA DOWNLOAD - Choose ONE option below
+    // ============================================================
     
     // OPTION 1: Download single day (today)
     const today = new Date().toISOString().split('T')[0];
     await downloader.downloadAllData(today);
     
     // OPTION 2: Download bulk historical data (last 7 days)
+    // Uncomment these lines to download the last 7 days
     // const endDate = new Date();
     // const startDate = new Date();
     // startDate.setDate(startDate.getDate() - 7);
     // await downloader.downloadBulkData(startDate, endDate);
     
     // OPTION 3: Download bulk data for specific date range
+    // Uncomment and modify dates as needed
     // await downloader.downloadBulkData('2024-01-01', '2024-01-31');
     
     console.log('\n✓ Download completed successfully!');
@@ -463,14 +466,23 @@ async function main() {
     console.error('\n✗ Download failed:', error.message);
     
     // Provide helpful error messages
-    if (error.message.includes('credentials')) {
-      console.log('\nTroubleshooting: Check your username and password');
+    if (error.message.includes('Token file not found')) {
+      console.log('\n🔧 SOLUTION: Run the token generator first:');
+      console.log('  1. pip install garth');
+      console.log('  2. python3 generate_tokens.py');
+      console.log('  3. Enter your credentials and 2FA code when prompted');
+      console.log('  4. Run this script again: npm start');
+    } else if (error.message.includes('credentials')) {
+      console.log('\n🔧 SOLUTION: Check your username and password');
     } else if (error.message.includes('2FA') || error.message.includes('MFA')) {
-      console.log('\nTroubleshooting: Disable 2FA on your Garmin account or use OAuth API');
+      console.log('\n🔧 SOLUTION: Use token-based authentication:');
+      console.log('  1. pip install garth');
+      console.log('  2. python3 generate_tokens.py');
+      console.log('  3. Update main() to use: await downloader.loginWithTokens()');
     } else if (error.message.includes('network')) {
-      console.log('\nTroubleshooting: Check your internet connection');
+      console.log('\n🔧 SOLUTION: Check your internet connection');
     } else if (error.message.includes('authenticated')) {
-      console.log('\nTroubleshooting: Login failed, verify credentials');
+      console.log('\n🔧 SOLUTION: Login failed, regenerate tokens or verify credentials');
     }
     
     process.exit(1);
