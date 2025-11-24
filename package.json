@@ -1,0 +1,25 @@
+{
+  "name": "healthanalytics",
+  "version": "1.0.0",
+  "description": "Unified Health Data Platform - Download data from multiple wearable devices",
+  "main": "index.js",
+  "scripts": {
+    "garmin": "node garmin-downloader.js",
+    "oura": "node oura-downloader.js",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "health",
+    "fitness",
+    "wearables",
+    "garmin",
+    "oura",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "garmin-connect": "^1.6.2",
+    "axios": "^1.6.0"
+  }
+}
