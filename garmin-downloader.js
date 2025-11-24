@@ -37,6 +37,32 @@ class GarminDataDownloader {
     }
   }
 
+  async loginWithTokens(tokenFile = 'garmin_tokens.json') {
+    try {
+      console.log('Attempting to login using OAuth tokens...');
+      
+      // Load tokens from file
+      const tokenData = JSON.parse(await fs.readFile(tokenFile, 'utf8'));
+      
+      if (!tokenData.oauth1 || !tokenData.oauth2) {
+        throw new Error('Invalid token file. Please regenerate tokens.');
+      }
+      
+      // Set tokens on the client
+      this.GCClient.client.oauth1Token = tokenData.oauth1;
+      this.GCClient.client.oauth2Token = tokenData.oauth2;
+      
+      this.isAuthenticated = true;
+      console.log('✓ Successfully authenticated using OAuth tokens');
+      return true;
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        throw new Error('Token file not found. Please run the Python token generator first.');
+      }
+      throw new Error(`Token authentication failed: ${error.message}`);
+    }
+  }
+
   async login(username, password) {
     if (!username || !password) {
       throw new Error('Username and password are required');
@@ -61,7 +87,7 @@ class GarminDataDownloader {
       if (error.message.includes('Invalid credentials') || error.message.includes('401')) {
         throw new Error('Invalid username or password. Please check your credentials.');
       } else if (error.message.includes('MFA') || error.message.includes('2FA')) {
-        throw new Error('Two-factor authentication detected. Please disable 2FA or use the official OAuth API.');
+        throw new Error('Two-factor authentication detected. Please run the Python token generator to create OAuth tokens.');
       } else if (error.message.includes('ENOTFOUND') || error.message.includes('network')) {
         throw new Error('Network error. Please check your internet connection.');
       }
@@ -401,8 +427,8 @@ async function main() {
   
   try {
     // Load credentials from environment variables (recommended) or hardcode
-    const username = process.env.GARMIN_USERNAME || 'emilio.guadarrama82@gmail.com';
-    const password = process.env.GARMIN_PASSWORD || 'M@cbook0';
+    const username = process.env.GARMIN_USERNAME || 'your_garmin_email@example.com';
+    const password = process.env.GARMIN_PASSWORD || 'your_garmin_password';
     
     if (username === 'your_garmin_email@example.com') {
       console.error('\n⚠ ERROR: Please set your Garmin credentials!');
