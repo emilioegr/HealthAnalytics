@@ -1,0 +1,23 @@
+{
+  "name": "healthanalytics-oura",
+  "version": "1.0.0",
+  "description": "Oura Ring data downloader for HealthAnalytics platform",
+  "main": "oura-downloader.js",
+  "scripts": {
+    "start": "node oura-downloader.js",
+    "test": "node test-oura.js"
+  },
+  "keywords": [
+    "oura",
+    "health",
+    "fitness",
+    "wearables",
+    "sleep",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
