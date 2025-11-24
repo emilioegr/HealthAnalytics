@@ -430,11 +430,11 @@ async function main() {
     const username = process.env.GARMIN_USERNAME || 'your_garmin_email@example.com';
     const password = process.env.GARMIN_PASSWORD || 'your_garmin_password';
     
-    if (username === 'your_garmin_email@example.com') {
+    if (username === 'emilio.guadarrama82@gmail.com') {
       console.error('\n⚠ ERROR: Please set your Garmin credentials!');
       console.log('\nOption 1 - Use environment variables (recommended):');
-      console.log('  export GARMIN_USERNAME="your_email@example.com"');
-      console.log('  export GARMIN_PASSWORD="your_password"');
+      const username = 'emilio.guadarrama82@gmail.com';
+      const password = 'M@cbook0';
       console.log('\nOption 2 - Edit the code and replace the placeholder credentials\n');
       process.exit(1);
     }
