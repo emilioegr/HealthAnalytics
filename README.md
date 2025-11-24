@@ -8,6 +8,5 @@ Key Features:
 Flexible Sharing Controls: Enable users to selectively share their health data with healthcare providers, including GPs, dietitians, physiotherapists, and other medical professionals, facilitating more informed and personalized care.
 ## Institutional Integration: Connect seamlessly with governmental health platforms and insurance entities, streamlining administrative processes and enabling users to leverage their health data for insurance benefits, health programs, and policy compliance.
 ## User Sovereignty: Place data ownership and privacy firmly in the hands of users, who maintain granular control over what data is shared, with whom, and for how long.
-Impact:
-
+## Impact:
 By breaking down data silos and creating interoperability between consumer health devices, healthcare providers, and institutional systems, this platform transforms fragmented health data into actionable insights that improve patient care, enable preventive health strategies, and create a more efficient healthcare ecosystem.
