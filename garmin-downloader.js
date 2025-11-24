@@ -401,8 +401,8 @@ async function main() {
   
   try {
     // Load credentials from environment variables (recommended) or hardcode
-    const username = process.env.GARMIN_USERNAME || 'your_garmin_email@example.com';
-    const password = process.env.GARMIN_PASSWORD || 'your_garmin_password';
+    const username = process.env.GARMIN_USERNAME || 'emilio.guadarrama82@gmail.com';
+    const password = process.env.GARMIN_PASSWORD || 'M@cbook0';
     
     if (username === 'your_garmin_email@example.com') {
       console.error('\n⚠ ERROR: Please set your Garmin credentials!');
