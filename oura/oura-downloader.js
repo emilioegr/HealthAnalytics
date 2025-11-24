@@ -17,6 +17,36 @@ class OuraDataDownloader {
     });
   }
 
+  static async loadToken(filePath = 'oura-token.txt') {
+    try {
+      const tokenPath = path.join(__dirname, filePath);
+      const token = await fs.readFile(tokenPath, 'utf8');
+      return token.trim();
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        throw new Error(`Token file not found: ${filePath}. Please create this file with your Oura access token.`);
+      }
+      throw new Error(`Error reading token file: ${error.message}`);
+    }
+  }
+
+  static async createTokenFile(filePath = 'oura-token.txt') {
+    const tokenPath = path.join(__dirname, filePath);
+    const template = `# Oura Personal Access Token
+# Get your token from: https://cloud.ouraring.com/personal-access-tokens
+# Replace the line below with your actual token (remove the # and YOUR_TOKEN_HERE)
+# YOUR_TOKEN_HERE`;
+    
+    try {
+      await fs.writeFile(tokenPath, template);
+      console.log(`✓ Created token file template: ${tokenPath}`);
+      console.log('Please edit this file and add your Oura access token.');
+      return tokenPath;
+    } catch (error) {
+      throw new Error(`Failed to create token file: ${error.message}`);
+    }
+  }
+
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -414,20 +444,33 @@ class OuraDataDownloader {
 // Usage Example
 async function main() {
   try {
-    // Get your Personal Access Token from: https://cloud.ouraring.com/personal-access-tokens
-    const accessToken = process.env.OURA_ACCESS_TOKEN || 'YOUR_OURA_ACCESS_TOKEN';
+    const tokenFile = 'oura-token.txt';
     
-    if (accessToken === 'YOUR_OURA_ACCESS_TOKEN') {
-      console.error('\n⚠ ERROR: Please set your Oura Personal Access Token!');
-      console.log('\nSteps to get your token:');
+    // Check if token file exists, if not create template
+    let accessToken;
+    try {
+      accessToken = await OuraDataDownloader.loadToken(tokenFile);
+      
+      // Validate token is not placeholder
+      if (accessToken.includes('YOUR_TOKEN_HERE') || accessToken.startsWith('#')) {
+        throw new Error('Token file contains placeholder text');
+      }
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        console.log('Token file not found. Creating template...');
+        await OuraDataDownloader.createTokenFile(tokenFile);
+      }
+      
+      console.error('\n⚠ ERROR: Please configure your Oura access token!');
+      console.log('\nSteps:');
       console.log('1. Visit: https://cloud.ouraring.com/personal-access-tokens');
       console.log('2. Create a new Personal Access Token');
-      console.log('3. Set it as environment variable:');
-      console.log('   export OURA_ACCESS_TOKEN="your_token_here"');
-      console.log('\nOr edit the code and replace YOUR_OURA_ACCESS_TOKEN with your actual token\n');
+      console.log(`3. Edit the file "${tokenFile}" and paste your token`);
+      console.log('4. Run this script again\n');
       process.exit(1);
     }
     
+    console.log('✓ Token loaded successfully');
     const downloader = new OuraDataDownloader(accessToken);
     
     // Choose one of the following options:
@@ -455,7 +498,7 @@ async function main() {
       console.error(`Message: ${error.response.data?.message || 'Unknown error'}`);
       
       if (error.response.status === 401) {
-        console.log('\nTroubleshooting: Invalid access token. Please check your token.');
+        console.log('\nTroubleshooting: Invalid access token. Please check your token in oura-token.txt');
       } else if (error.response.status === 429) {
         console.log('\nTroubleshooting: Rate limit exceeded. Please wait and try again.');
       }
