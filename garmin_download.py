@@ -26,6 +26,7 @@ class GarminDataDownloader:
     def __init__(self):
         self.token_dir = Path.home() / ".garth"
         self.authenticated = False
+        self.display_name = None
     
     def login(self, email=None, password=None):
         """Login to Garmin Connect with optional 2FA support"""
@@ -34,12 +35,19 @@ class GarminDataDownloader:
             if self.token_dir.exists():
                 print("Attempting to use saved tokens...")
                 garth.resume(str(self.token_dir))
-                garth.client.username  # Test the connection
-                print("✓ Authenticated using saved tokens")
+                
+                # Get display name
+                try:
+                    profile = garth.connectapi("/userprofile-service/socialProfile")
+                    self.display_name = profile.get("displayName") or profile.get("userName")
+                except:
+                    self.display_name = garth.client.username
+                
+                print(f"✓ Authenticated as: {self.display_name}")
                 self.authenticated = True
                 return True
-        except Exception:
-            print("⚠ Saved tokens not found or expired")
+        except Exception as e:
+            print(f"⚠ Saved tokens not valid: {e}")
         
         # Need fresh login
         if not email:
@@ -58,6 +66,13 @@ class GarminDataDownloader:
             garth.save(str(self.token_dir))
             print(f"✓ Tokens saved to: {self.token_dir}")
             
+            # Get display name
+            try:
+                profile = garth.connectapi("/userprofile-service/socialProfile")
+                self.display_name = profile.get("displayName") or profile.get("userName")
+            except:
+                self.display_name = garth.client.username
+            
             self.authenticated = True
             return True
             
@@ -72,6 +87,13 @@ class GarminDataDownloader:
                     # Save tokens
                     self.token_dir.mkdir(exist_ok=True)
                     garth.save(str(self.token_dir))
+                    
+                    # Get display name
+                    try:
+                        profile = garth.connectapi("/userprofile-service/socialProfile")
+                        self.display_name = profile.get("displayName") or profile.get("userName")
+                    except:
+                        self.display_name = garth.client.username
                     
                     print("✓ Login successful with MFA!")
                     self.authenticated = True
@@ -89,19 +111,32 @@ class GarminDataDownloader:
             raise Exception("Not authenticated")
         
         try:
-            # Format: YYYY-MM-DD
+            # Validate date
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             
-            # Validate date is not in the future
+            # Check if date is in the future
             if date_obj > datetime.now():
-                print(f"⚠ Warning: Date {date_str} is in the future. Using today's date instead.")
+                print(f"⚠ Date {date_str} is in the future. Using today instead.")
                 date_str = datetime.now().strftime("%Y-%m-%d")
             
-            # Get daily stats using the correct endpoint
-            stats = garth.connectapi(
-                f"/usersummary-service/usersummary/daily/{garth.client.username}",
-                params={"calendarDate": date_str}
-            )
+            # Use the simpler endpoint that works better
+            print(f"Fetching data for: {date_str}")
+            
+            # Try the stats endpoint first
+            try:
+                stats = garth.connectapi(
+                    f"/usersummary-service/stats/daily/{date_str}",
+                )
+            except Exception as e1:
+                # Try alternative endpoint
+                try:
+                    stats = garth.connectapi(
+                        f"/usersummary-service/usersummary/daily/{self.display_name}",
+                        params={"calendarDate": date_str}
+                    )
+                except Exception as e2:
+                    print(f"Both endpoints failed: {e1}, {e2}")
+                    return None
             
             summary = {
                 "date": date_str,
@@ -131,13 +166,17 @@ class GarminDataDownloader:
             raise Exception("Not authenticated")
         
         try:
-            # Validate date is not in the future
+            # Validate date
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             if date_obj > datetime.now():
                 date_str = datetime.now().strftime("%Y-%m-%d")
             
-            # Get heart rate data
-            hr_data = garth.connectapi(f"/wellness-service/wellness/dailyHeartRate/{garth.client.username}/{date_str}")
+            # Try simple endpoint first
+            try:
+                hr_data = garth.connectapi(f"/wellness-service/wellness/dailyHeartRate/{date_str}")
+            except:
+                # Try with display name
+                hr_data = garth.connectapi(f"/wellness-service/wellness/dailyHeartRate/{self.display_name}/{date_str}")
             
             heart_rate = {
                 "date": date_str,
@@ -206,7 +245,7 @@ class GarminDataDownloader:
             raise Exception("Not authenticated")
         
         try:
-            # Validate date is not in the future
+            # Validate date
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             if date_obj > datetime.now():
                 date_str = datetime.now().strftime("%Y-%m-%d")
@@ -260,16 +299,28 @@ def main():
     
     args = parser.parse_args()
     
+    # Get current date
+    now = datetime.now()
+    
     # Determine date to download
     if args.yesterday:
-        target_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        target_date = (now - timedelta(days=1)).strftime("%Y-%m-%d")
     elif args.date:
-        target_date = args.date
+        # Validate the provided date
+        try:
+            date_obj = datetime.strptime(args.date, "%Y-%m-%d")
+            target_date = args.date
+        except ValueError:
+            print(f"✗ Invalid date format: {args.date}")
+            print("Use format: YYYY-MM-DD (e.g., 2024-11-27)")
+            sys.exit(1)
     else:
-        target_date = datetime.now().strftime("%Y-%m-%d")
+        target_date = now.strftime("%Y-%m-%d")
     
     print("=" * 60)
     print("Garmin Data Downloader")
+    print("=" * 60)
+    print(f"Target date: {target_date}")
     print("=" * 60)
     
     downloader = GarminDataDownloader()
