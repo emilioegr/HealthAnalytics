@@ -250,13 +250,18 @@ class GarminDataDownloader:
             if date_obj > datetime.now():
                 date_str = datetime.now().strftime("%Y-%m-%d")
             
-            # Get stress data
-            stress_data = garth.connectapi(f"/wellness-service/wellness/dailyStress/{date_str}")
+            # Get stress data - use weekly endpoint and extract the specific day
+            # Format: /usersummary-service/stats/stress/weekly/YYYY-MM-DD/52 (52 weeks)
+            stress_data = garth.connectapi(f"/usersummary-service/stats/stress/daily/{date_str}")
             
             stress = {
                 "date": date_str,
                 "avg_stress": stress_data.get("avgStressLevel") or stress_data.get("overallStressLevel"),
                 "max_stress": stress_data.get("maxStressLevel"),
+                "high_stress_duration": stress_data.get("highStressDuration"),
+                "medium_stress_duration": stress_data.get("mediumStressDuration"),
+                "low_stress_duration": stress_data.get("lowStressDuration"),
+                "rest_stress_duration": stress_data.get("restStressDuration"),
             }
             
             print(f"\n=== Stress Data for {date_str} ===")
