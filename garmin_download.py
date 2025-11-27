@@ -92,15 +92,23 @@ class GarminDataDownloader:
             # Format: YYYY-MM-DD
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             
-            # Get daily stats
-            stats = garth.connectapi(f"/usersummary-service/stats/daily/{date_str}")
+            # Validate date is not in the future
+            if date_obj > datetime.now():
+                print(f"⚠ Warning: Date {date_str} is in the future. Using today's date instead.")
+                date_str = datetime.now().strftime("%Y-%m-%d")
+            
+            # Get daily stats using the correct endpoint
+            stats = garth.connectapi(
+                f"/usersummary-service/usersummary/daily/{garth.client.username}",
+                params={"calendarDate": date_str}
+            )
             
             summary = {
                 "date": date_str,
                 "steps": stats.get("totalSteps"),
-                "calories": stats.get("totalKilocalories"),
+                "calories": stats.get("totalKilocalories") or stats.get("activeKilocalories"),
                 "distance_meters": stats.get("totalDistanceMeters"),
-                "active_seconds": stats.get("activeTimeInSeconds"),
+                "active_seconds": stats.get("activeTimeInSeconds") or stats.get("highlyActiveSeconds"),
                 "floors_climbed": stats.get("floorsClimbed"),
                 "moderate_intensity_minutes": stats.get("moderateIntensityMinutes"),
                 "vigorous_intensity_minutes": stats.get("vigorousIntensityMinutes"),
@@ -123,14 +131,20 @@ class GarminDataDownloader:
             raise Exception("Not authenticated")
         
         try:
-            hr_data = garth.connectapi(f"/wellness-service/wellness/dailyHeartRate/{date_str}")
+            # Validate date is not in the future
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            if date_obj > datetime.now():
+                date_str = datetime.now().strftime("%Y-%m-%d")
+            
+            # Get heart rate data
+            hr_data = garth.connectapi(f"/wellness-service/wellness/dailyHeartRate/{garth.client.username}/{date_str}")
             
             heart_rate = {
                 "date": date_str,
                 "resting_hr": hr_data.get("restingHeartRate"),
                 "max_hr": hr_data.get("maxHeartRate"),
                 "min_hr": hr_data.get("minHeartRate"),
-                "avg_hr": hr_data.get("averageHeartRate"),
+                "avg_hr": hr_data.get("averageHeartRate") or hr_data.get("currentDayRestingHeartRate"),
             }
             
             print(f"\n=== Heart Rate for {date_str} ===")
@@ -149,9 +163,19 @@ class GarminDataDownloader:
             raise Exception("Not authenticated")
         
         try:
-            sleep_data = garth.connectapi(f"/wellness-service/wellness/dailySleepData/{date_str}")
+            # Validate date is not in the future
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            if date_obj > datetime.now():
+                date_str = datetime.now().strftime("%Y-%m-%d")
             
-            daily_sleep = sleep_data.get("dailySleepDTO", {})
+            # Get sleep data - try different endpoint formats
+            try:
+                sleep_data = garth.connectapi(f"/wellness-service/wellness/dailySleepData/{garth.client.username}?date={date_str}")
+            except:
+                # Alternative endpoint
+                sleep_data = garth.connectapi(f"/wellness-service/wellness/dailySleepData/{garth.client.username}/{date_str}")
+            
+            daily_sleep = sleep_data.get("dailySleepDTO") if isinstance(sleep_data, dict) else {}
             
             sleep = {
                 "date": date_str,
@@ -168,6 +192,8 @@ class GarminDataDownloader:
                 print(f"Deep Sleep: {(sleep['deep_sleep_seconds']/3600):.2f} hours" if sleep['deep_sleep_seconds'] else "N/A")
                 print(f"Light Sleep: {(sleep['light_sleep_seconds']/3600):.2f} hours" if sleep['light_sleep_seconds'] else "N/A")
                 print(f"REM Sleep: {(sleep['rem_sleep_seconds']/3600):.2f} hours" if sleep['rem_sleep_seconds'] else "N/A")
+            else:
+                print("No sleep data available")
             
             return sleep
         except Exception as e:
@@ -180,11 +206,17 @@ class GarminDataDownloader:
             raise Exception("Not authenticated")
         
         try:
+            # Validate date is not in the future
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            if date_obj > datetime.now():
+                date_str = datetime.now().strftime("%Y-%m-%d")
+            
+            # Get stress data
             stress_data = garth.connectapi(f"/wellness-service/wellness/dailyStress/{date_str}")
             
             stress = {
                 "date": date_str,
-                "avg_stress": stress_data.get("avgStressLevel"),
+                "avg_stress": stress_data.get("avgStressLevel") or stress_data.get("overallStressLevel"),
                 "max_stress": stress_data.get("maxStressLevel"),
             }
             
