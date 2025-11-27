@@ -20,13 +20,33 @@ class OuraDataDownloader {
   static async loadToken(filePath = 'oura-token.txt') {
     try {
       const tokenPath = path.join(__dirname, filePath);
-      const token = await fs.readFile(tokenPath, 'utf8');
-      return token.trim();
+      const content = await fs.readFile(tokenPath, 'utf8');
+      
+      // Split by lines and filter out comments and empty lines
+      const lines = content.split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'));
+      
+      if (lines.length === 0) {
+        throw new Error('No token found in file. Please add your Oura access token.');
+      }
+      
+      // Get the first non-comment line as the token
+      const token = lines[0].trim();
+      
+      // Remove any non-alphanumeric characters except hyphens and underscores
+      const cleanToken = token.replace(/[^a-zA-Z0-9_-]/g, '');
+      
+      if (cleanToken.length < 20) {
+        throw new Error('Token appears to be invalid (too short). Please check your token.');
+      }
+      
+      return cleanToken;
     } catch (error) {
       if (error.code === 'ENOENT') {
         throw new Error(`Token file not found: ${filePath}. Please create this file with your Oura access token.`);
       }
-      throw new Error(`Error reading token file: ${error.message}`);
+      throw error;
     }
   }
 
