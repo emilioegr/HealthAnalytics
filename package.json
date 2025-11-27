@@ -4,14 +4,16 @@
   "description": "Unified Health Data Platform - Download data from multiple wearable devices",
   "main": "index.js",
   "scripts": {
-    "garmin": "node garmin-downloader.js",
-    "oura": "node oura-downloader.js",
     "start": "node index.js",
+    "garmin": "python3 garmin_download.py",
+    "garmin:yesterday": "python3 garmin_download.py --yesterday",
+    "garmin:date": "python3 garmin_download.py --date",
+    "garmin:node": "node garmin-downloader.js",
     "garmin:today": "node garmin-downloader.js --today",
-    "garmin:yesterday": "node garmin-downloader.js --yesterday",
     "garmin:week": "node garmin-downloader.js --week",
     "garmin:month": "node garmin-downloader.js --month",
-    "test": "node test-garmin.js"
+    "oura": "node oura-downloader.js",
+    "test": "python3 garmin_download.py --date 2024-11-01"
   },
   "keywords": [
     "health",
@@ -19,6 +21,8 @@
     "wearables",
     "garmin",
     "oura",
+    "suunto",
+    "polar",
     "api"
   ],
   "author": "",
