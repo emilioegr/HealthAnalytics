@@ -6,7 +6,12 @@
   "scripts": {
     "garmin": "node garmin-downloader.js",
     "oura": "node oura-downloader.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "garmin:today": "node garmin-downloader.js --today",
+    "garmin:yesterday": "node garmin-downloader.js --yesterday",
+    "garmin:week": "node garmin-downloader.js --week",
+    "garmin:month": "node garmin-downloader.js --month",
+    "test": "node test-garmin.js"
   },
   "keywords": [
     "health",

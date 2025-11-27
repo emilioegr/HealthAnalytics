@@ -346,7 +346,7 @@ class OuraDataDownloader {
       await this.sleep(500);
       
       // Get sessions
-      bulkData.sessions = await this.getSessions(start, end);
+      bulkData.sessions = await this.getSessions(start, end); 
       await this.sleep(500);
       
       // Get tags

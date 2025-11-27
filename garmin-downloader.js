@@ -427,38 +427,90 @@ async function main() {
   
   try {
     // ============================================================
-    // AUTHENTICATION - Choose ONE option below
+    // AUTHENTICATION
     // ============================================================
-    
-    // OPTION A: Token-based authentication (RECOMMENDED for 2FA accounts)
-    // First run: python3 generate_tokens.py
     console.log('Attempting to authenticate with OAuth tokens...');
     await downloader.loginWithTokens('garmin_tokens.json');
     
-    // OPTION B: Username/Password authentication (Only for non-2FA accounts)
-    // Uncomment these lines and comment out Option A if you don't have 2FA
-    // const username = process.env.GARMIN_USERNAME || 'your_email@example.com';
-    // const password = process.env.GARMIN_PASSWORD || 'your_password';
-    // await downloader.login(username, password);
-    
     // ============================================================
-    // DATA DOWNLOAD - Choose ONE option below
+    // PARSE COMMAND LINE ARGUMENTS
     // ============================================================
+    const args = process.argv.slice(2);
+    const command = args[0];
     
-    // OPTION 1: Download single day (today)
-    const today = new Date().toISOString().split('T')[0];
-    await downloader.downloadAllData(today);
+    let startDate, endDate;
     
-    // OPTION 2: Download bulk historical data (last 7 days)
-    // Uncomment these lines to download the last 7 days
-    // const endDate = new Date();
-    // const startDate = new Date();
-    // startDate.setDate(startDate.getDate() - 7);
-    // await downloader.downloadBulkData(startDate, endDate);
-    
-    // OPTION 3: Download bulk data for specific date range
-    // Uncomment and modify dates as needed
-    // await downloader.downloadBulkData('2024-01-01', '2024-01-31');
+    if (command === '--today' || !command) {
+      // Default: Download only today's data
+      const today = new Date().toISOString().split('T')[0];
+      console.log(`\n📅 Downloading data for TODAY: ${today}\n`);
+      await downloader.downloadAllData(today);
+      
+    } else if (command === '--yesterday') {
+      // Download yesterday's data
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const dateStr = yesterday.toISOString().split('T')[0];
+      console.log(`\n📅 Downloading data for YESTERDAY: ${dateStr}\n`);
+      await downloader.downloadAllData(dateStr);
+      
+    } else if (command === '--week') {
+      // Download last 7 days
+      endDate = new Date();
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7);
+      console.log(`\n📅 Downloading data for LAST 7 DAYS\n`);
+      await downloader.downloadBulkData(startDate, endDate);
+      
+    } else if (command === '--month') {
+      // Download last 30 days
+      endDate = new Date();
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      console.log(`\n📅 Downloading data for LAST 30 DAYS\n`);
+      await downloader.downloadBulkData(startDate, endDate);
+      
+    } else if (command === '--date' && args[1]) {
+      // Download specific date
+      const dateStr = args[1];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        throw new Error('Invalid date format. Use: YYYY-MM-DD');
+      }
+      console.log(`\n📅 Downloading data for: ${dateStr}\n`);
+      await downloader.downloadAllData(dateStr);
+      
+    } else if (command === '--range' && args[1] && args[2]) {
+      // Download date range
+      const start = args[1];
+      const end = args[2];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
+        throw new Error('Invalid date format. Use: YYYY-MM-DD');
+      }
+      console.log(`\n📅 Downloading data from ${start} to ${end}\n`);
+      await downloader.downloadBulkData(start, end);
+      
+    } else if (command === '--help' || command === '-h') {
+      // Show help
+      console.log('\n============================================');
+      console.log('Garmin Data Downloader - Usage');
+      console.log('============================================\n');
+      console.log('Commands:');
+      console.log('  npm run garmin               Download today\'s data (default)');
+      console.log('  npm run garmin:today         Download today\'s data');
+      console.log('  npm run garmin:yesterday     Download yesterday\'s data');
+      console.log('  npm run garmin:week          Download last 7 days');
+      console.log('  npm run garmin:month         Download last 30 days');
+      console.log('');
+      console.log('Advanced usage:');
+      console.log('  node garmin-downloader.js --date 2024-11-27');
+      console.log('  node garmin-downloader.js --range 2024-11-01 2024-11-30');
+      console.log('  node garmin-downloader.js --help');
+      console.log('\n============================================\n');
+      return;
+      
+    } else {
+      throw new Error(`Unknown command: ${command}. Use --help for usage information.`);
+    }
     
     console.log('\n✓ Download completed successfully!');
     
@@ -471,20 +523,21 @@ async function main() {
       console.log('  1. pip install garth');
       console.log('  2. python3 generate_tokens.py');
       console.log('  3. Enter your credentials and 2FA code when prompted');
-      console.log('  4. Run this script again: npm start');
+      console.log('  4. Run this script again: npm run garmin');
     } else if (error.message.includes('credentials')) {
       console.log('\n🔧 SOLUTION: Check your username and password');
     } else if (error.message.includes('2FA') || error.message.includes('MFA')) {
       console.log('\n🔧 SOLUTION: Use token-based authentication:');
       console.log('  1. pip install garth');
       console.log('  2. python3 generate_tokens.py');
-      console.log('  3. Update main() to use: await downloader.loginWithTokens()');
+      console.log('  3. Run this script again: npm run garmin');
     } else if (error.message.includes('network')) {
       console.log('\n🔧 SOLUTION: Check your internet connection');
     } else if (error.message.includes('authenticated')) {
-      console.log('\n🔧 SOLUTION: Login failed, regenerate tokens or verify credentials');
+      console.log('\n🔧 SOLUTION: Login failed, regenerate tokens');
     }
     
+    console.log('\nFor help, run: node garmin-downloader.js --help\n');
     process.exit(1);
   }
 }
